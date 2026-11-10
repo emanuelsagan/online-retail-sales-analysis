@@ -17,6 +17,38 @@ The company is a UK-based online retailer selling giftware, and many of its cust
 
 The raw export is not usable as it is: it mixes sales with returns, stock adjustments, fees and test entries, and the two source files overlap. This project first builds a trustworthy data model, then answers the questions in Excel and Power BI.
 
+## Key findings
+
+### 1. Here's the situation
+
+- Between December 2009 and 9 December 2011 the retailer earned **£18.98M net revenue** (£19.70M gross, £0.72M returns) from 39,516 orders and 5,852 identified customers, with an average order value of £498.58.
+- Returns look like 3.65% of gross revenue, but a third of them come from just two orders that were placed and cancelled on the same day. Without them the return rate is about **2.4%**.
+- Almost a quarter of all lines (23%) have no customer ID. They count in revenue, but cannot be used for customer-level analysis.
+
+### 2. Here's what changed
+
+- Comparing the same months (January to November), **2011 grew by 2.2%** over 2010 (£8.59M vs £8.41M).
+- The year was split in two: January to April 2011 was **11% below** 2010 (April alone -24%), while May to November was **8% above** 2010.
+- **Growth came from larger orders, not more of them:** from January to November 2011 the business had **3.7% fewer orders** (17,407 vs 18,077), yet revenue grew 2.2%. Orders fell in most months, most sharply in February-April (April: 1,235 vs 1,435, -14%) and October (-11%). Order value rose, especially in August-October (AOV £542-567 vs £482-489).
+- The business is strongly seasonal: September to November brought about **36% of 2010 revenue**, with November as the peak month in both years.
+
+### 3. Here's what I found
+
+- **Markets:** the business depends on the UK. The 10 largest markets outside the UK together bring only 12.3% of net revenue, led by EIRE (3.0%), the Netherlands (2.9%) and Germany (2.0%).
+- **Products:** 6% of products generate half of net revenue and 22% generate 80%. No single product exceeds 1.7%, so there is no dependence on one best-seller, but there is a long tail of about 3,700 codes that adds only 20%.
+- **Ranking by gross revenue is misleading:** a product can rank 4th by gross revenue and earn £0 net, because a huge order was cancelled. Net revenue is the right basis for product decisions.
+- **Returns:** without the two bulk cancellations the monthly return rate stays between 1% and 6.5%, with no clear seasonality; the highest month, April 2011, is also the weakest month for revenue. Returns are spread across the range (the 10 most returned products are about 15% of all returns), but they come in two kinds: a few bulk orders cancelled in full (e.g. PANTRY CHOPPING BOARD, 82% of sales returned in only 6 return lines) and recurring returns of fragile or electrical items: **WHITE CHERRY LIGHTS (36% of sales, 126 returns)**, COLOUR GLASS STAR T-LIGHT HOLDER (16%) and RED RETROSPOT CAKE STAND (8%).
+
+### 4. Here's what should happen next
+
+- **Plan for Q4:** stock, staffing and marketing for the September-November peak, since it decides the year.
+- **Investigate the falling number of orders:** orders dropped in most months of 2011 and were offset only by larger orders. Check which customers stopped buying or bought less often, starting with February-April and October, and with April, which also had the highest return rate.
+- **Check the products with recurring returns:** packaging, quality and descriptions of WHITE CHERRY LIGHTS, COLOUR GLASS STAR T-LIGHT HOLDER and RED RETROSPOT CAKE STAND.
+- **Review very large orders before confirming them:** two cancelled orders made up a third of all returns.
+- **Protect the core range:** keep the ~1,000 products that bring 80% of revenue always in stock, and review the long tail for discontinuation.
+- **Capture customer IDs for every order:** this would allow retention and customer value analysis (RFM) on the full customer base.
+- **Grow outside the UK:** EIRE, the Netherlands and Germany are the natural first markets to develop.
+
 ## Dataset
 
 - **Source:** [Online Retail II, UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/502/online+retail+ii)
@@ -36,16 +68,16 @@ The raw export is not usable as it is: it mixes sales with returns, stock adjust
 
 ```
 sql/
-  01_staging_and_data_quality.sql   import, typing, data quality audit (done)
-  02_cleaning.sql                   duplicates, stg_retail_dedup (done)
-  03_star_schema.sql                row_type, dim_customer, dim_product, dim_date, fact_sales (done)
+  01_staging_and_data_quality.sql   import, typing, data quality audit
+  02_cleaning.sql                   duplicates, stg_retail_dedup
+  03_star_schema.sql                row_type, dim_customer, dim_product, dim_date, fact_sales
 excel/                              Dashboard, Trend, Countries, Products, Returns, Notes
 powerbi/                            3-page report: Overview, Sales drivers, Products & Returns
 images/                             screenshots used in this README
 README.md
 ```
 
-## Approach so far
+## Approach
 
 1. **Staging:** both files imported as text (`nvarchar`) and combined into `stg_retail_raw`, with a `source_file` column. Importing as text avoids silent loss of dirty values.
 2. **Typing:** columns converted once into `stg_retail_typed`, with validation of every conversion.
@@ -232,38 +264,6 @@ Design choices:
 - **Look at the dimension values, not only the keys.** The product dimension joined correctly, but the "longest description" rule replaced some product names with stock notes; it only showed up in the Pareto pivot.
 - **Time intelligence needs a real calendar.** A date table built only from days with sales has gaps, and `SAMEPERIODLASTYEAR` silently drops the previous-year days that fall on a missing date. A continuous calendar fixed it.
 - **Decide what a fact table represents before modelling.** The first version kept only sales, so every revenue figure was gross. Adding cancellations with a `row_type` column made net revenue a simple sum and kept gross and returns available as separate measures.
-
-## Findings
-
-### 1. Here's the situation
-
-- Between December 2009 and 9 December 2011 the retailer earned **£18.98M net revenue** (£19.70M gross, £0.72M returns) from 39,516 orders and 5,852 identified customers, with an average order value of £498.58.
-- Returns look like 3.65% of gross revenue, but a third of them come from just two orders that were placed and cancelled on the same day. Without them the return rate is about **2.4%**.
-- Almost a quarter of all lines (23%) have no customer ID. They count in revenue, but cannot be used for customer-level analysis.
-
-### 2. Here's what changed
-
-- Comparing the same months (January to November), **2011 grew by 2.2%** over 2010 (£8.59M vs £8.41M).
-- The year was split in two: January to April 2011 was **11% below** 2010 (April alone -24%), while May to November was **8% above** 2010.
-- **Growth came from larger orders, not more of them:** from January to November 2011 the business had **3.7% fewer orders** (17,407 vs 18,077), yet revenue grew 2.2%. Orders fell in most months, most sharply in February-April (April: 1,235 vs 1,435, -14%) and October (-11%). Order value rose, especially in August-October (AOV £542-567 vs £482-489).
-- The business is strongly seasonal: September to November brought about **36% of 2010 revenue**, with November as the peak month in both years.
-
-### 3. Here's what I found
-
-- **Markets:** the business depends on the UK. The 10 largest markets outside the UK together bring only 12.3% of net revenue, led by EIRE (3.0%), the Netherlands (2.9%) and Germany (2.0%).
-- **Products:** 6% of products generate half of net revenue and 22% generate 80%. No single product exceeds 1.7%, so there is no dependence on one best-seller, but there is a long tail of about 3,700 codes that adds only 20%.
-- **Ranking by gross revenue is misleading:** a product can rank 4th by gross revenue and earn £0 net, because a huge order was cancelled. Net revenue is the right basis for product decisions.
-- **Returns:** without the two bulk cancellations the monthly return rate stays between 1% and 6.5%, with no clear seasonality; the highest month, April 2011, is also the weakest month for revenue. Returns are spread across the range (the 10 most returned products are about 15% of all returns), but they come in two kinds: a few bulk orders cancelled in full (e.g. PANTRY CHOPPING BOARD, 82% of sales returned in only 6 return lines) and recurring returns of fragile or electrical items: **WHITE CHERRY LIGHTS (36% of sales, 126 returns)**, COLOUR GLASS STAR T-LIGHT HOLDER (16%) and RED RETROSPOT CAKE STAND (8%).
-
-### 4. Here's what should happen next
-
-- **Plan for Q4:** stock, staffing and marketing for the September-November peak, since it decides the year.
-- **Investigate the falling number of orders:** orders dropped in most months of 2011 and were offset only by larger orders. Check which customers stopped buying or bought less often, starting with February-April and October, and with April, which also had the highest return rate.
-- **Check the products with recurring returns:** packaging, quality and descriptions of WHITE CHERRY LIGHTS, COLOUR GLASS STAR T-LIGHT HOLDER and RED RETROSPOT CAKE STAND.
-- **Review very large orders before confirming them:** two cancelled orders made up a third of all returns.
-- **Protect the core range:** keep the ~1,000 products that bring 80% of revenue always in stock, and review the long tail for discontinuation.
-- **Capture customer IDs for every order:** this would allow retention and customer value analysis (RFM) on the full customer base.
-- **Grow outside the UK:** EIRE, the Netherlands and Germany are the natural first markets to develop.
 
 ## How to reproduce
 
